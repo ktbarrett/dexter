@@ -3,9 +3,5 @@ from __future__ import annotations
 from dexter import hello
 
 
-def main() -> None:
+def test_hello() -> None:
     hello()
-
-
-if __name__ == "__main__":
-    main()
