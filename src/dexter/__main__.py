@@ -1,11 +1,5 @@
 from __future__ import annotations
 
-from dexter import hello
+from dexter._app import main
 
-
-def main() -> None:
-    hello()
-
-
-if __name__ == "__main__":
-    main()
+main()
