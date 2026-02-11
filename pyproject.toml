@@ -1,0 +1,67 @@
+[project]
+name = "dexter"
+version = "0.1.0"
+description = "Python-based project task automation"
+readme = "README.md"
+authors = [
+    { name = "Kaleb Barrett", email = "dev.ktbarrett@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = []
+license = "BSD-3-Clause"
+license-files = [
+    "LICENSE",
+]
+
+[project.scripts]
+dex = "dexter.__main__:main"
+
+[build-system]
+requires = ["uv_build>=0.9.27,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pre-commit",
+    "ruff>=0.15.0",
+]
+test = [
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+extend-select = [
+    "I",        # isort
+    "UP",       # pyupgrade
+    "PL",       # pylint
+    "E",        # pycodestyle errors
+    "W",        # pycodestyle warnings
+    "F",        # pyflakes
+    "C4",       # flake8-comprehension
+    "ISC",      # implicit string concat
+    "TC",       # flake8-typechecking
+    "SIM",      # simplify
+    "RUF",      # ruff custom rules
+    "PERF",     # performance lints
+    "B",        # flake8-bugbear
+]
+ignore = [
+    "E741",    # ambiguous variable name (preference)
+    "E501",    # line too long (preference)
+    "PLR0912", # Too many branches (>12) (preference)
+    "PLR0913", # Too many arguments to function call (>5) (preference)
+    "PLR0915", # Too many statements (>50) (preference)
+    "PLR2004", # Magic value used in comparison (preference)
+    "PLW0603", # Using the global statement (preference)
+    "PLR0911", # Too many return statements (preference)
+    "PLW1641", # __eq__ without __hash__ (mypy compatibility)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["dexter"]
+required-imports = ["from __future__ import annotations"]
