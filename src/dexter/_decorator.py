@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import ast
 import inspect
+from collections.abc import Callable
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Literal,
     Optional,
     ParamSpec,
@@ -109,7 +109,16 @@ def task(
     return task_obj
 
 
-union_types = tuple(map(type, {int | str, Union[int, str], Optional[int]}))
+union_types = tuple(
+    map(
+        type,
+        {
+            int | str,
+            Union[int, str],  # noqa: UP007
+            Optional[int],  # noqa: UP045
+        },
+    )
+)
 
 literal_type = tuple(map(type, {Literal[1], Literal["a", 1]}))
 

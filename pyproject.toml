@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Kaleb Barrett", email = "dev.ktbarrett@gmail.com" }
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = []
 license = "BSD-3-Clause"
 license-files = [
