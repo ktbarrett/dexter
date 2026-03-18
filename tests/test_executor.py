@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from dexter._executor import linearize
+from dexter._flow import linearize
 
 
 def test_linearize() -> None:
