@@ -23,7 +23,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "mypy>=1.19.1",
-    "pre-commit",
+    "prek",
     "ruff>=0.15.0",
 ]
 tests = [
