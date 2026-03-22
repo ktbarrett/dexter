@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import pytest
-
 from dexter._flow import linearize
 
 
 def test_linearize() -> None:
-    assert linearize(1, {1: [2, 3], 2: [4], 3: [4], 4: []}) == [1, 2, 3, 4]
+    assert linearize(1, {1: [2, 3], 2: [4], 3: [4], 4: []}, debug=True) == [1, 2, 3, 4]
 
     assert linearize(
         "Z",
@@ -21,10 +19,15 @@ def test_linearize() -> None:
             "B": [],
             "A": [],
         },
+        debug=True,
     ) == ["Z", "F", "G", "H", "D", "A", "B", "C", "E"]
 
-    assert linearize("Z", {"Z": [], "A": ["Z"]}) == ["Z"]
+    assert linearize("Z", {"Z": [], "A": ["Z"]}, debug=True) == ["Z"]
 
-    with pytest.raises(ValueError):
-        # B cannot be bother before C as required by A and after C as required by C
-        linearize("A", {"A": ["B", "C"], "C": ["B"], "B": []})
+    try:
+        linearize("A", {"A": ["B", "C"], "C": ["B"], "B": []}, debug=True)
+    except ValueError as e:
+        assert "C must come before B" in str(e)
+        assert "B must come before C" in str(e)
+    else:
+        assert False, "Expected ValueError"
