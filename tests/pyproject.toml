@@ -1,0 +1,7 @@
+[tool.ruff]
+extend = "../pyproject.toml"
+
+[tool.ruff.lint]
+ignore = [
+    "B011",    # assert False (useful in test code)
+]
