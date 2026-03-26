@@ -46,10 +46,19 @@ def linearize(
         if debug:
             print(f"Starting merge of {associativity[0]} with merge set {merge_set}")
         while merge_remaining:
+            candidates_checked: set[T] = set()
             for i in merge_remaining:
                 # choose the next candidate from the head of the sequence
                 seq_i_head_idx = indexes[i]
                 candidate = merge_set[i][seq_i_head_idx]
+                # skip candidates we've already checked (can happen if the same candidate is at the head of multiple sequences in the merge set)
+                if candidate in candidates_checked:
+                    if debug:
+                        print(
+                            f"Skipping candidate {candidate} from {associativity[i]} because it has already been checked"
+                        )
+                    continue
+                candidates_checked.add(candidate)
                 if debug:
                     print(f"Considering candidate {candidate} from {associativity[i]}")
                 # search for the candidate in the tails of the other sequences in the merge set
