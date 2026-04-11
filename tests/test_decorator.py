@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from enum import Enum, auto
 from typing import Literal, Optional, Union
 
@@ -269,3 +270,47 @@ def test_literal_eval() -> None:
         == "this_look_a_lot_like_a_variable_name"
     )
     assert literal_eval("[1, 2, 3]") == "[1, 2, 3]"
+
+
+def test_union_of_one() -> None:
+    @task
+    def example(
+        a: Union[int],  # noqa: UP007
+    ): ...
+
+    assert len(example.args) == 1
+    assert example.args[0].name == "a"
+    assert example.args[0].converter is int
+
+
+def test_bad_annotations() -> None:
+    with pytest.raises(ValueError):
+
+        @task
+        def example(a: int | str | None = None, /): ...
+
+    with pytest.raises(ValueError):
+
+        @task
+        def example(a: Literal["a"] | int): ...
+
+
+def test_union_of_unions() -> None:
+    @task
+    def example(
+        a: Union[Literal["a"], Union[Literal["b"], Literal["c"]]],  # noqa: UP007
+    ): ...
+
+    assert len(example.args) == 1
+    assert example.args[0].name == "a"
+    assert example.args[0].choices == ("a", "b", "c")
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 11), reason="This makes Python 3.10 bug out in a weird way"
+)
+def test_bad_annotation_syntax() -> None:
+    with pytest.raises(ValueError):
+
+        @task
+        def example(a: 1, /): ...  # type: ignore[valid-type]

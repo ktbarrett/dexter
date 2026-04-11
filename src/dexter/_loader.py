@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import runpy
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -17,7 +18,8 @@ class TaskFile:
 def load_task_file() -> TaskFile:
     task_filepath = Path("tasks.py")
     if not task_filepath.is_file():
-        raise FileNotFoundError("No tasks.py file in the current directory")
+        print("No tasks.py file in the current directory", file=sys.stderr)
+        sys.exit(1)
 
     # Load tasks.py and find all Task instances
     task_mod = runpy.run_path(str(task_filepath))

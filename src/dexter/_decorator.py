@@ -141,10 +141,9 @@ def parse_annotation(
 
     if isinstance(annotation, union_types):
         args = annotation.__args__  # type: ignore[attr-defined]
-        if len(args) == 1:
-            # union of one type is just the type
-            return parse_annotation(args[0], default_is_None)
-        elif len(args) == 2 and type(None) in args:
+        # unions must have at least 2 args, Union[X] results in X not a single arg union, Union[] is a SyntaxError
+        assert len(args) >= 2
+        if len(args) == 2 and type(None) in args:
             if not default_is_None:
                 raise ValueError(
                     f"Annotations that accept `None` must be defaulted with it: {annotation}"
@@ -178,4 +177,4 @@ def parse_choices(annotation: Any) -> tuple[Any, ...]:
     elif isinstance(annotation, literal_type):
         return annotation.__args__  # type: ignore[attr-defined]
     else:
-        raise TypeError(f"Unsupported annotation for choices: {annotation}")
+        raise ValueError(f"Unsupported annotation for choices: {annotation}")
