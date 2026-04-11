@@ -1,13 +1,25 @@
 from __future__ import annotations
 
-from argparse import ArgumentParser
+import importlib.metadata
+
+from dexter._argparser import parse_args
+from dexter._loader import load_task_file
 
 
 def main() -> None:
-    argparse = ArgumentParser(prog="dex")
-    group = argparse.add_mutually_exclusive_group()
-    group.add_argument(
-        "-l", "--list", action="store_true", help="List all available commands"
-    )
-    # group.add_subparser()
-    # TODO Build CLI for all tasks
+    args = parse_args()
+
+    if args.version:
+        version = importlib.metadata.version("dexter")
+        print(f"dexter v{version}")
+        return
+
+    taskfile = load_task_file()
+
+    if args.list_tasks:
+        print("Available tasks:")
+        for task in taskfile.tasks:
+            print(f"- {task.name}")
+    elif args.task:
+        assert args.task_args is not None
+        print(f"Running task {args.task} with args: {args.task_args}")

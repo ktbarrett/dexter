@@ -15,9 +15,9 @@ class TaskFile:
 
 
 def load_task_file() -> TaskFile:
-    # Find tasks.py
-    if not (task_filepath := Path("tasks.py")).exists():
-        raise FileNotFoundError("No tasks.py found")
+    task_filepath = Path("tasks.py")
+    if not task_filepath.is_file():
+        raise FileNotFoundError("No tasks.py file in the current directory")
 
     # Load tasks.py and find all Task instances
     task_mod = runpy.run_path(str(task_filepath))
