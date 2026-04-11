@@ -1,15 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Hashable, Mapping
+from collections.abc import Hashable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import cache
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import Any, TypeVar, cast
 
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from dexter._task import Arg, Task
-
+from dexter._task import Arg, Task
 
 T = TypeVar("T", bound=Hashable)
 
