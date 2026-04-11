@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import update_wrapper
@@ -32,19 +33,20 @@ empty = Empty()
 class Arg(Generic[T]):
     name: str
     default: T | Empty = empty
+    type_: type[T] | None = None
     converter: Callable[[str], T] | None = None
     description: str | None = None
     position_type: PositionType
-    choices: tuple[T, ...] | None = None
+    choices: Sequence[T] | None = None
 
 
 @dataclass(kw_only=True, unsafe_hash=True)
 class Task(Generic[Params, Result]):
     name: str
     description: str
-    args: tuple[Arg[Any], ...]
-    predecessors: tuple[Task[Any, Any], ...]
-    successors: tuple[Task[Any, Any], ...]
+    args: Sequence[Arg[Any]]
+    predecessors: Sequence[Task[Any, Any] | str]
+    successors: Sequence[Task[Any, Any] | str]
     body: Callable[Params, Result]
 
     __name__: str

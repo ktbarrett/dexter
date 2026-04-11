@@ -72,10 +72,11 @@ def task(
         default = empty if param.default is param.empty else param.default
 
         if param.name not in annotations:
-            converter, choices = (None, None)
+            type_, converter, choices = (None, None, None)
         else:
-            converter, choices = parse_annotation(
-                annotations[param.name], default is None
+            type_, converter, choices = (
+                annotations[param.name],
+                *parse_annotation(annotations[param.name], default is None),
             )
 
         position_type = {
@@ -90,6 +91,7 @@ def task(
             Arg(
                 name=param.name,
                 default=default,
+                type_=type_,
                 converter=converter,
                 description=None,
                 position_type=position_type,
