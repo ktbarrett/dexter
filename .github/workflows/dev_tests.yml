@@ -31,6 +31,8 @@ jobs:
       uses: astral-sh/setup-uv@v7
 
     - name: Run tests
+      env:
+        COVERAGE_PROCESS_START: .coveragerc.toml
       run: |
         uv run --group tests pytest
 
