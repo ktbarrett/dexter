@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+import sys
 
 from dexter._argparser import parse_args
 from dexter._loader import load_task_file
@@ -22,4 +23,7 @@ def main() -> None:
             print(f"- {task.name}")
     elif args.task:
         assert args.task_args is not None
-        print(f"Running task {args.task} with args: {args.task_args}")
+        print(f"Running task {args.task!r} with args: {' '.join(args.task_args)}")
+    else:
+        print("No task specified. Use --list to see available tasks.")
+        sys.exit(1)
