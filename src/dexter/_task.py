@@ -1,12 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import update_wrapper
-from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
+from typing import Any, Generic, ParamSpec, TypeVar
 
 
 class PositionType(Enum):

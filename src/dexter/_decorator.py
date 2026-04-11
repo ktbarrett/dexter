@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import ast
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from enum import Enum
 from typing import (
-    TYPE_CHECKING,
     Any,
     Literal,
     Optional,
@@ -17,9 +16,6 @@ from typing import (
 )
 
 from dexter._task import Arg, PositionType, Task, empty
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
 
 F = TypeVar("F", bound=Callable[..., Any])
 
