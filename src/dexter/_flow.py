@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Collection, Hashable, Mapping, Sequence
-from dataclasses import dataclass
 from functools import cache
 from typing import Any, TypeVar, cast
 
-from dexter._task import Arg, Params, Result, Task
+from dexter._task import Params, Result, Task
 
 T = TypeVar("T", bound=Hashable)
 
@@ -188,18 +187,46 @@ def resolve_tasks(
     return cast("Sequence[TaskResolved[Params, Result]]", tasks)
 
 
-@dataclass(kw_only=True)
-class TaskFlow:
-    tasks_ordered: list[Task[Any, Any]]
-    args: list[Arg[Any]]
+# def flatten_args(tasks_ordered: Sequence[Task[Any, Any]]) -> Collection[Arg[Any]]:
+#     """Flatten all args in a sequence of tasks into a single collection of args."""
+#     all_args: dict[str, tuple[Arg[Any], Task[Any, Any]]] = {}
+#     for task in tasks_ordered:
+#         for arg in task.args:
+#             if arg.name in all_args and (existing := all_args[arg.name])[0] != arg:
+#                 existing_arg, existing_arg_task = existing
+#                 if existing_arg.position_type != arg.position_type:
+#                     raise ValueError(
+#                         f"Argument {arg.name} for task {task.name} has conflicting position types with argument "
+#                         f"of the same name from task {existing_arg_task.name}: "
+#                         f"{existing_arg.position_type} vs {arg.position_type}"
+#                     )
+#                 elif existing_arg.default != arg.default:
+#                     raise ValueError(
+#                         f"Argument {arg.name} for task {task.name} has conflicting default values with argument "
+#                         f"of the same name from task {existing_arg_task.name}: "
+#                         f"{existing_arg.default} vs {arg.default}"
+#                     )
+#                 elif existing_arg.choices != arg.choices:
+#                     raise ValueError(
+#                         f"Argument {arg.name} for task {task.name} has conflicting choices with argument "
+#                         f"of the same name from task {existing_arg_task.name}: "
+#                         f"{existing_arg.choices} vs {arg.choices}"
+#                     )
+#                 elif existing_arg.converter != arg.converter:
+#                     # Not exactly sure how to handle conflicting converters
+#                     pass
+
+#             all_args[arg.name] = (arg, task)
+#     return [arg for arg, _ in all_args.values()]
 
 
-# def build_flow(task: Task[Any, Any]) -> TaskFlow:
-#     # Build a tree of tasks to their preds. Explore through succs to find all
-#     # "terminal" tasks and make the flow the pseudo-task top of the boundary succs.
+# def build_dep_tree(
+#     task: Task[Any, Any],
+# ) -> tuple[dict[Task[Any, Any], tuple[Task[Any, Any], ...]], list[Task[Any, Any]]]:
+#     """Build the dependency tree for a given task to feed into linearize()"""
 
-#     dep_tree: dict[object, tuple[object, ...]] = {}
-#     roots: list[object] = []
+#     dep_tree: dict[Task[Any, Any], tuple[Task[Any, Any], ...]] = {}
+#     roots: list[Task[Any, Any]] = []
 
 #     def helper(task: Task[Any, Any]) -> None:
 #         if task in dep_tree:
@@ -217,15 +244,46 @@ class TaskFlow:
 
 #     helper(task)
 
-#     flow_top = object()
-#     # Must reverse the roots to ensure the last succ is the first dep of the flow so it's the last to execute.
-#     dep_tree[flow_top] = tuple(reversed(roots))
+#     return dep_tree, roots
 
-#     flow = linearize(flow_top, dep_tree)
-#     assert flow[0] is flow_top
-#     flow = flow[1:]
+
+# @dataclass(kw_only=True)
+# class TaskFlow:
+#     name: str
+#     description: str
+#     tasks_ordered: Sequence[Task[Any, Any]]
+#     args: Collection[Arg[Any]]
+
+
+# def build_flow(main_task: Task[Any, Any], tasks: list[Task[Any, Any]]) -> TaskFlow:
+#     """Builds a flow from the given main task.
+
+#     Flows represent a linearized execution order of tasks derived from the dependency
+#     structure of the tasks starting from the main task; and also a flattened set of
+#     all arguments required by the tasks in the flow.
+#     """
+#     resolve_tasks(tasks)
+
+#     dep_tree, roots = build_dep_tree(main_task)
+
+#     flow = Task(
+#         name=task.name,
+#         body=lambda: None,
+#         args=[],
+#         description=task.description,
+#         # Must reverse the roots to ensure the last succ is the first dep of the flow so it's the last to execute.
+#         predecessors=tuple(reversed(roots)),
+#         successors=(),
+#     )
+#     dep_tree[flow] =
+#     tasks_ordered = linearize(flow, dep_tree)
 
 #     # collapse all args into a flat list.
-#     ...  # TODO
+#     args_combined: list[Arg[Any]] = flatten_args(tasks_ordered)
 
-#     return TaskFlow(tasks_ordered=cast("list[Task[Any, Any]]", flow), args=[])
+#     return TaskFlow(
+#         name=main_task.name,
+#         description=main_task.description,
+#         tasks_ordered=tasks_ordered,
+#         args=args_combined,
+#     )
