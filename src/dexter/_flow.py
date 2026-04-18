@@ -13,6 +13,18 @@ T = TypeVar("T", bound=Hashable)
 def linearize(
     node: T, dep_tree: Mapping[T, Sequence[T]], debug: bool = False
 ) -> list[T]:
+    """Return a linearized ordering of nodes given a dependency tree.
+
+    This implements the C3 algorithm for linearizing an acyclic ordered dependency graph.
+
+    Args:
+        node: The node to linearize from.
+        dep_tree: A mapping from each node to the sequence of nodes it depends on.
+        debug: If True, print debug information about the linearization process.
+
+    Returns:
+        A list of nodes in a linearized order consistent with the dependency tree.
+    """
     if debug:
         print(f"Linearizing {node} with dep tree {dep_tree}")
 
