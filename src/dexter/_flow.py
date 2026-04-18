@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Hashable, Mapping, Sequence
+from collections.abc import Collection, Hashable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import cache
 from typing import Any, TypeVar, cast
 
-from dexter._task import Arg, Task
+from dexter._task import Arg, Params, Result, Task
 
 T = TypeVar("T", bound=Hashable)
 
@@ -122,44 +122,98 @@ def linearize(
     return helper(node)
 
 
+class TaskResolved(Task[Params, Result]):
+    predecessors: Sequence[Task[Any, Any]]
+    successors: Sequence[Task[Any, Any]]
+
+
+def resolve_tasks(
+    tasks: Sequence[Task[Any, Any]],
+) -> Collection[TaskResolved[Params, Result]]:
+    """Resolve str forward references in task predecessors and successors to actual Task objects.
+
+    This also ensures that task names are unique across the set of tasks.
+    """
+    # build maps of names to tasks and ensure no duplicates
+    names_to_tasks: dict[str, Task[Any, Any]] = {}
+    for task in tasks:
+        if task.name in names_to_tasks:
+            raise ValueError(f"Duplicate task name found: {task.name}")
+        names_to_tasks[task.name] = task
+
+    # resolve all preds and succs from str to Task objects
+    for task in tasks:
+        preds_resolved: list[Task[Any, Any]] = []
+        for pred in task.predecessors:
+            if isinstance(pred, str):
+                try:
+                    resolved_task = names_to_tasks[pred]
+                except KeyError:
+                    raise ValueError(
+                        f"Task {task.name} has predecessor {pred} which is not a known task"
+                    ) from None
+                else:
+                    preds_resolved.append(resolved_task)
+            else:
+                preds_resolved.append(pred)
+        task.predecessors = preds_resolved
+
+        succs_resolved: list[Task[Any, Any]] = []
+        for succ in task.successors:
+            if isinstance(succ, str):
+                try:
+                    resolved_task = names_to_tasks[succ]
+                except KeyError:
+                    raise ValueError(
+                        f"Task {task.name} has successor {succ} which is not a known task"
+                    ) from None
+                else:
+                    succs_resolved.append(resolved_task)
+            else:
+                succs_resolved.append(succ)
+        task.successors = succs_resolved
+
+    return cast("Sequence[TaskResolved[Params, Result]]", tasks)
+
+
 @dataclass(kw_only=True)
 class TaskFlow:
     tasks_ordered: list[Task[Any, Any]]
     args: list[Arg[Any]]
 
 
-def build_flow(task: Task[Any, Any]) -> TaskFlow:
-    # Build a tree of tasks to their preds. Explore through succs to find all
-    # "terminal" tasks and make the flow the pseudo-task top of the boundary succs.
+# def build_flow(task: Task[Any, Any]) -> TaskFlow:
+#     # Build a tree of tasks to their preds. Explore through succs to find all
+#     # "terminal" tasks and make the flow the pseudo-task top of the boundary succs.
 
-    dep_tree: dict[object, tuple[object, ...]] = {}
-    roots: list[object] = []
+#     dep_tree: dict[object, tuple[object, ...]] = {}
+#     roots: list[object] = []
 
-    def helper(task: Task[Any, Any]) -> None:
-        if task in dep_tree:
-            return
-        elif task in roots:
-            roots.remove(task)
-        dep_tree[task] = task.predecessors
-        for pred in task.predecessors:
-            helper(pred)
-        if not task.successors:
-            roots.append(task)
-        else:
-            for succ in task.successors:
-                helper(succ)
+#     def helper(task: Task[Any, Any]) -> None:
+#         if task in dep_tree:
+#             return
+#         elif task in roots:
+#             roots.remove(task)
+#         dep_tree[task] = task.predecessors
+#         for pred in task.predecessors:
+#             helper(pred)
+#         if not task.successors:
+#             roots.append(task)
+#         else:
+#             for succ in task.successors:
+#                 helper(succ)
 
-    helper(task)
+#     helper(task)
 
-    flow_top = object()
-    # Must reverse the roots to ensure the last succ is the first dep of the flow so it's the last to execute.
-    dep_tree[flow_top] = tuple(reversed(roots))
+#     flow_top = object()
+#     # Must reverse the roots to ensure the last succ is the first dep of the flow so it's the last to execute.
+#     dep_tree[flow_top] = tuple(reversed(roots))
 
-    flow = linearize(flow_top, dep_tree)
-    assert flow[0] is flow_top
-    flow = flow[1:]
+#     flow = linearize(flow_top, dep_tree)
+#     assert flow[0] is flow_top
+#     flow = flow[1:]
 
-    # collapse all args into a flat list.
-    ...  # TODO
+#     # collapse all args into a flat list.
+#     ...  # TODO
 
-    return TaskFlow(tasks_ordered=cast("list[Task[Any, Any]]", flow), args=[])
+#     return TaskFlow(tasks_ordered=cast("list[Task[Any, Any]]", flow), args=[])
