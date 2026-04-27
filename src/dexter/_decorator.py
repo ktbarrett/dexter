@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import ast
 import inspect
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Generator, Sequence
 from enum import Enum
+from functools import reduce
 from typing import (
     Any,
     Literal,
@@ -11,6 +11,7 @@ from typing import (
     ParamSpec,
     TypeVar,
     Union,
+    cast,
     get_type_hints,
     overload,
 )
@@ -67,13 +68,6 @@ def task(
     for param in signature.parameters.values():
         default = empty if param.default is param.empty else param.default
 
-        if param.name not in annotations:
-            converter, choices = (None, None)
-        else:
-            converter, choices = parse_annotation(
-                annotations[param.name], default is None
-            )
-
         position_type = {
             param.KEYWORD_ONLY: PositionType.KEYWORD_ONLY,
             param.POSITIONAL_ONLY: PositionType.POSITIONAL_ONLY,
@@ -82,11 +76,20 @@ def task(
             param.VAR_POSITIONAL: PositionType.VARIABLE_POSITIONAL,
         }[param.kind]
 
+        type_: type[Any]
+        choices: Sequence[Any] | None
+        if param.name not in annotations:
+            type_, choices = (str, None)
+        else:
+            type_, choices = parse_annotation(annotations[param.name], default is None)
+
         args.append(
             Arg(
                 name=param.name,
+                type_=type_,
                 default=default,
-                converter=converter,
+                factory=None,
+                converter=None,
                 description=None,
                 position_type=position_type,
                 choices=choices,
@@ -116,65 +119,68 @@ union_types = tuple(
     )
 )
 
-literal_type = tuple(map(type, {Literal[1], Literal["a", 1]}))
+literal_type = type(Literal[1])
 
 
-def literal_eval(s: str) -> Any:
-    """Safely evaluate a string as a Python literal."""
-    try:
-        # If a int, float, or bool literal, this will return the literal value
-        val = ast.literal_eval(s)
-    except (Exception, SyntaxError):
-        # If it's a string, return it as is
-        return s
+def flatten_unions(annotation: Any) -> Generator[type[Any], None, None]:
+    """Flatten nested unions in an annotation."""
+    if isinstance(annotation, union_types):
+        for arg in annotation.__args__:  # type: ignore[attr-defined]
+            yield from flatten_unions(arg)
     else:
-        if not isinstance(val, (int, float, bool)):
-            # If it's not a supported literal type, return the string
-            return s
-        return val
+        yield annotation
+
+
+def combine_literals(types: tuple[type[Any], ...]) -> tuple[type[Any], ...]:
+    """Combine multiple Literal types into a single Literal type with all the choices."""
+    literals = [t for t in types if isinstance(t, literal_type)]
+    if not literals:
+        return types
+    nonliterals = [t for t in types if not isinstance(t, literal_type)]
+    all_literal_args = tuple(t for type_ in literals for t in type_.__args__)  # type: ignore[attr-defined]
+    return (
+        *nonliterals,
+        cast("type[Any]", Literal[all_literal_args]),
+    )
 
 
 def parse_annotation(
     annotation: Any, default_is_None: bool
-) -> tuple[Callable[[str], Any] | None, tuple[Any, ...] | None]:
-    """Parse an annotation to get a converter, choices, and optionality."""
+) -> tuple[type[Any], Sequence[Any] | None]:
+    """Parse an annotation to get a type and choices.
 
-    if isinstance(annotation, union_types):
-        args = annotation.__args__  # type: ignore[attr-defined]
-        # unions must have at least 2 args, Union[X] results in X not a single arg union, Union[] is a SyntaxError
-        assert len(args) >= 2
-        if len(args) == 2 and type(None) in args:
-            if not default_is_None:
-                raise ValueError(
-                    f"Annotations that accept `None` must be defaulted with it: {annotation}"
-                )
-            # converter is the non-None type
-            non_none_arg = args[0] if args[1] is type(None) else args[1]
-            return parse_annotation(non_none_arg, default_is_None)
+    Args:
+        annotation: The annotation to parse.
+        default_is_None:
+            Whether the default value for this argument is None.
+
+            This is used to remove `None` from an optional annotation if the default value is `None`.
+
+    Returns:
+        A tuple of (type, choices) from the annotation.
+    """
+
+    # Flatten nested unions and optionals into a list of types.
+    types = tuple(flatten_unions(annotation))
+
+    # Combine literals in type list.
+    types = combine_literals(types)
+
+    if len(types) == 1:
+        # Check if it's a Literal or an Enum to get choices.
+        type_ = types[0]
+        if isinstance(type_, literal_type):
+            choices = type_.__args__  # type: ignore[attr-defined]
+            return type_, choices
+        elif isinstance(type_, type) and issubclass(type_, Enum):
+            choices = tuple(type_)
+            return type_, choices
         else:
-            # the only other unions we support are unions of literals, which we interpret as choices
-            choices = parse_choices(annotation)
-            return literal_eval, choices
-    elif isinstance(annotation, literal_type):
-        choices = annotation.__args__  # type: ignore[attr-defined]
-        return literal_eval, choices
-    elif isinstance(annotation, type) and issubclass(annotation, Enum):
-        choices = tuple(annotation)
-        return lambda s: annotation[s], choices
-    elif isinstance(annotation, type):
-        return annotation, None
+            return type_, None
+    elif len(types) == 2 and type(None) in types and default_is_None:
+        # Optional type. The default value is None, so we can remove None from the annotation and use the non-None type as the type.
+        non_none_arg = types[0] if types[1] is type(None) else types[1]
+        return parse_annotation(non_none_arg, False)
     else:
-        raise ValueError(f"Unsupported annotation: {annotation}")
-
-
-def parse_choices(annotation: Any) -> tuple[Any, ...]:
-    """Parse an annotation to get choices."""
-    if isinstance(annotation, union_types):
-        choices: list[Any] = []
-        for arg in annotation.__args__:  # type: ignore[attr-defined]
-            choices.extend(parse_choices(arg))
-        return tuple(choices)
-    elif isinstance(annotation, literal_type):
-        return annotation.__args__  # type: ignore[attr-defined]
-    else:
-        raise ValueError(f"Unsupported annotation for choices: {annotation}")
+        # A union of something.
+        return reduce(lambda a, b: a | b, types), None

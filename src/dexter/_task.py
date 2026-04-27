@@ -30,6 +30,7 @@ empty = Empty()
 class Arg(Generic[T]):
     name: str
     default: T | Empty = empty
+    factory: Callable[[], T] | None = None
     converter: Callable[[str], T] | None = None
     description: str | None = None
     position_type: PositionType

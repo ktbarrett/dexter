@@ -1,3 +1,4 @@
+# ruff: noqa UP007
 from __future__ import annotations
 
 import sys
@@ -7,8 +8,16 @@ from typing import Literal, Optional, Union
 import pytest
 
 from dexter import task
-from dexter._decorator import literal_eval
+from dexter._decorator import flatten_unions
 from dexter._task import PositionType, empty
+
+
+def test_flatten_unions() -> None:
+    assert list(flatten_unions(int)) == [int]
+    assert list(flatten_unions(int | str | None)) == [int, str, type(None)]
+    assert list(flatten_unions(Union[int, str, None])) == [int, str, type(None)]
+    assert list(flatten_unions(Union[int, Union[str, None]])) == [int, str, type(None)]
+    assert list(flatten_unions(Union[int, str | None])) == [int, str, type(None)]
 
 
 def test_decorator_is_function_like_wrapper() -> None:
@@ -256,20 +265,6 @@ def test_enum_choices() -> None:
     assert example.args[0].converter is not None
     assert example.args[0].converter("RED") == Color.RED
     assert example.args[0].choices == (Color.RED, Color.GREEN, Color.BLUE)
-
-
-def test_literal_eval() -> None:
-    assert literal_eval("123") == 123
-    assert literal_eval("1.23") == 1.23
-    assert literal_eval("True") is True
-    assert literal_eval("False") is False
-    assert literal_eval("abc") == "abc"
-    assert literal_eval("wow there are spaces") == "wow there are spaces"
-    assert (
-        literal_eval("this_look_a_lot_like_a_variable_name")
-        == "this_look_a_lot_like_a_variable_name"
-    )
-    assert literal_eval("[1, 2, 3]") == "[1, 2, 3]"
 
 
 def test_union_of_one() -> None:
