@@ -20,7 +20,7 @@ jobs:
         os: [ubuntu-24.04, windows-2025, macos-15]
 
     steps:
-    - uses: actions/checkout@v6.0.2
+    - uses: actions/checkout@v6.0.3
 
     - uses: actions/setup-python@v6
       with:
