@@ -110,8 +110,8 @@ union_types = tuple(
         type,
         {
             int | str,
-            Union[int, str],  # noqa: UP007
-            Optional[int],  # noqa: UP045
+            Union[int, str],
+            Optional[int],
         },
     )
 )
