@@ -32,6 +32,9 @@ tests = [
     "pytest-cov>=7.0.0",
 ]
 
+[tool.uv.dependency-groups]
+dev = { requires-python = ">=3.11" }
+
 [tool.ruff.format]
 docstring-code-format = true
 
